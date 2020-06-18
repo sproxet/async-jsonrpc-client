@@ -1,6 +1,9 @@
-use serde::{Deserialize, Serialize};
-
+use serde::{Deserialize, Deserializer, Serialize, de::Error as DeserializerError};
 use crate::types::{Error, ErrorCode, RequestId, Value, Version};
+
+fn deserialize_requestid<'de, D>(d: D) -> Result<RequestId, D::Error> where D: Deserializer<'de> {
+    Ok(Value::deserialize(d)?.as_u64().ok_or(DeserializerError::custom("invalid requestid"))? as usize)
+}
 
 /// Successful response
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -10,6 +13,7 @@ pub struct SuccessResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub jsonrpc: Option<Version>,
     /// Correlation id
+    #[serde(deserialize_with = "deserialize_requestid")]
     pub id: RequestId,
     /// Result
     pub result: Value,
@@ -25,6 +29,7 @@ pub struct FailureResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub jsonrpc: Option<Version>,
     /// Correlation id
+    #[serde(deserialize_with = "deserialize_requestid")]
     pub id: RequestId,
     /// Result
     pub result: Option<Value>,
